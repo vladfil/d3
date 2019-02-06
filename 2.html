@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <title>Beeswarm plot - collision detection</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://d3js.org/d3-array.v1.min.js"></script>
+    <script src="https://d3js.org/d3-collection.v1.min.js"></script>
+    <script src="https://d3js.org/d3-color.v1.min.js"></script>
+    <script src="https://d3js.org/d3-format.v1.min.js"></script>
+    <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+    <script src="https://d3js.org/d3-time.v1.min.js"></script>
+    <script src="https://d3js.org/d3-time-format.v2.min.js"></script>
+    <script src="https://d3js.org/d3-scale.v2.min.js"></script>
+    <script src="https://d3js.org/d3-axis.v1.min.js"></script>
+  </head>
+  <body>
+    <div>
+      <!-- <button id="getChain">Get Chain</button> -->
+      <div id="content">
+        
+      </div>
+    </div>
+    <style>
+      #content{
+        position: relative;
+      }
+      .dot {
+          opacity: 0.5;
+          cursor: pointer;
+          transition: 0.3s;
+      }
+      .dot:hover{
+          opacity: 1;
+      }
+    </style>
+    <script type="text/javascript">
+
+        // document.getElementById('getChain').onclick = function(){
+
+            d3.json('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json')
+                .then( data => {
+                    if( data.length ) {
+                        return data
+                    } else {
+                        console.log('error')
+                    }
+                } )
+                .then( dataset => {
+					let data = JSON.parse(JSON.stringify(dataset))
+                    const width = 1100,
+                        height = 500,
+                        padding = 60,
+                        minTime = d3.min(data, (d) => d["Seconds"] ),
+                        maxTime = d3.max(data, (d) => d["Seconds"] ),
+                        minYear = d3.min(data, (d) => d["Year"] ),
+                        maxYear = d3.max(data, (d) => d["Year"] )
+
+                    const xScale = d3.scaleTime()
+                        .domain([ new Date(minYear-1, 1), new Date(maxYear, 12) ])
+                        .range([padding, width - padding])
+                    const yScale = d3.scaleLinear()
+                        .domain([minTime, maxTime+20])
+                        .range([padding, height - padding])
+
+                    const svg = d3.select('#content').append('svg').attr('width', width).attr('height', height)
+                    const yAxis = d3.axisLeft(yScale).tickFormat( time => {
+                      const date = new Date(null)
+                      date.setSeconds(time)
+                      return date.toISOString().substr(14, 5)
+                    } )
+                    const xAxis = d3.axisBottom(xScale).ticks(d3.timeYear.every(2))
+
+                    svg.append("g")
+                      .attr("transform", "translate(0," + (height - padding) + ")")
+                      .call(xAxis)
+
+                    svg.append("g")
+                      .attr("transform", "translate(" + padding +",0)")
+                      .call(yAxis)
+
+                    const circles = svg.selectAll('circle')
+                        .data(data)
+                        .enter()
+                        .append( "a" )
+                        .attr('xlink:href', d => d['URL'] ? d['URL'] : '#' )
+                        .attr('target', d => d['URL'] ? '_blank' : '_self' )
+						
+							.append('circle')
+							// .attr('cx', 160)
+							.attr('cy', 160)
+							.attr('cx', d => xScale(new Date(d['Year'], 1) ) )
+							.attr('cy', d => yScale(d['Seconds']) )
+							.attr('r', '7')
+							.attr('style', d => ( d['Doping'] ) ? 'fill: rgb(255, 127, 14);' : 'fill: rgb(31, 119, 180);')
+							.attr('stroke', '#000')
+							.attr('stroke-width', '1')
+							.attr('class', 'dot')
+							.attr('data-time', d => {
+								const date = new Date(null)
+								date.setSeconds(d["Seconds"])
+								return 'Year: ' + d['Year'] + ' Time: ' + date.toISOString().substr(14, 5)
+							} )
+							.attr('data-name', d => d['Name'] + ': ' + d['Nationality'] )
+							.attr('data-doping', d => d['Doping'] )
+							.transition()
+							.duration(1000)
+							.attr('fill-opacity', d => d['opacity'] ? 0 : 1)
+							/* .on('click', function() {
+								this.attr('fill-opacity', 0)
+							}) */
+console.log(circles);
+
+					svg
+						.append('rect')
+						.attr('width', 30)
+						.attr('height', 30)
+						.attr('x', 1000)
+						.attr('y', 150)
+						.attr('style', 'fill: rgb(31, 119, 180);')
+						.on('click', function() {
+							// console.log(d3.event);
+							const dataset = data.map( d => {
+								if( ! d["URL"] ) {
+									d['opacity'] = false
+								} else {
+									d['opacity'] = true
+								}
+
+								return d
+							} )
+
+							let circles = svg.selectAll('circle')
+							circles.style('opacity', 0.8)
+							let filtered = circles.filter( d => d['URL'] !== '' )
+							filtered.style('opacity', 0)
+						})
+
+
+					svg
+						.append('rect')
+						.attr('width', 30)
+						.attr('height', 30)
+						.attr('x', 1000)
+						.attr('y', 200)
+						.attr('style', 'fill: rgb(255, 127, 14);')
+						.on('click', function() {
+							data = data.map( d => {
+								if( d["URL"] ) {
+									d['opacity'] = true
+								} else {
+									d['opacity'] = false
+								}
+
+								return d
+							} )
+
+							let circles = svg.selectAll('circle')
+							circles.style('opacity', 0.8)
+							let filtered = circles.filter( d => d['URL'] === '' )
+							filtered.style('opacity', 0)
+						})
+
+
+                } )
+                .catch( err => {
+                    console.log(err)
+                } )
+        // }
+
+    </script>
+
+  </body>
+</html>
