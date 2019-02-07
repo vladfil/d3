@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <title>Beeswarm plot - collision detection</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://d3js.org/d3-array.v1.min.js"></script>
+    <script src="https://d3js.org/d3-collection.v1.min.js"></script>
+    <script src="https://d3js.org/d3-color.v1.min.js"></script>
+    <script src="https://d3js.org/d3-format.v1.min.js"></script>
+    <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+    <script src="https://d3js.org/d3-time.v1.min.js"></script>
+    <script src="https://d3js.org/d3-time-format.v2.min.js"></script>
+    <script src="https://d3js.org/d3-scale.v2.min.js"></script>
+    <script src="https://d3js.org/d3-axis.v1.min.js"></script>
+    <script src="https://d3js.org/d3-color.v1.min.js"></script>
+    <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+  </head>
+  <body>
+    <div>
+      <!-- <button id="getChain">Get Chain</button> -->
+      <div id="content">
+        
+      </div>
+    </div>
+    <style>
+      #content{
+        position: relative;
+      }
+    </style>
+    <script type="text/javascript">
+
+        function getColor(variance) {
+            const fills = [
+                { value: 12.8, color: 'rgb(165, 0, 38)'}, 
+                { value: 11.7, color: 'rgb(215, 48, 39)'}, 
+                { value: 10.6, color: 'rgb(244, 109, 67)'}, 
+                { value: 9.5, color: 'rgb(253, 174, 97)'}, 
+                { value: 8.3, color: 'rgb(254, 224, 144)'}, 
+                { value: 7.2, color: 'rgb(255, 255, 191)'}, 
+                { value: 6.1, color: 'rgb(224, 243, 248)'}, 
+                { value: 5.0, color: 'rgb(171, 217, 233)'}, 
+                { value: 3.9, color: 'rgb(116, 173, 209)'}, 
+                { value: 2.8, color: 'rgb(69, 117, 180)'}, 
+                // { value: -1000, color: 'rgb(49, 54, 149)'}
+            ]
+
+            let color = 'rgb(49, 54, 149)'
+
+            if( variance > 12.8 ) {
+                color = 'rgb(165, 0, 38)'
+            } else if( variance < 12.8 &&  variance > 11.7 ) {
+                color = 'rgb(215, 48, 39)'
+            } else if( variance < 11.7 &&  variance > 10.6 ) {
+                color = 'rgb(244, 109, 67)'
+            } else if( variance < 10.6 &&  variance > 9.5 ) {
+                color = 'rgb(253, 174, 97)'
+            } else if( variance < 9.5 &&  variance > 8.3 ) {
+                color = 'rgb(254, 224, 144)'
+            } else if( variance < 8.3 &&  variance > 7.2 ) {
+                color = 'rgb(255, 255, 191)'
+            } else if( variance < 7.2 &&  variance > 6.1 ) {
+                color = 'rgb(224, 243, 248)'
+            } else if( variance < 6.1 &&  variance > 5.0 ) {
+                color = 'rgb(171, 217, 233)'
+            } else if( variance < 5.0 &&  variance > 3.9 ) {
+                color = 'rgb(116, 173, 209)'
+            } else if( variance < 3.9 &&  variance > 2.8 ) {
+                color = 'rgb(69, 117, 180)'
+            }
+
+            return color
+        }
+
+        // document.getElementById('getChain').onclick = function(){
+
+        d3.json('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/global-temperature.json')
+            .then( data => {
+                if( data ) {
+                    return data
+                } else {
+                    console.log('error')
+                }
+            } )
+            .then( dataset => {
+                let clonedData = JSON.parse(JSON.stringify(dataset))
+                data = clonedData.monthlyVariance
+                base = clonedData.baseTemperature
+
+                const width = 1600,
+                    height = 600,
+                    padding = 100,
+                    minMonth = 0.5,
+                    maxMonth = 12.5,
+                    minYear = d3.min(data, (d) => d["year"] ),
+                    maxYear = d3.max(data, (d) => d["year"] )
+
+                const xScale = d3.scaleTime()
+                    .domain([ new Date(minYear-1, 1), new Date(maxYear, 12) ])
+                    .range([padding, width - padding])
+                    
+                const yScale = d3.scaleLinear()
+                    .domain([minMonth, maxMonth])
+                    .range([height - padding, padding])
+                    
+
+                const svg = d3.select('#content').append('svg').attr('width', width).attr('height', height)
+                const yAxis = d3.axisLeft(yScale).tickFormat( time => {
+                    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                    return monthNames[time-1]
+                } )
+                const xAxis = d3.axisBottom(xScale).ticks(d3.timeYear.every(10))
+
+                svg.append("g")
+                    .attr("transform", "translate(0," + (height - padding) + ")")
+                    .call(xAxis)
+
+                svg.append("g")
+                    .attr("transform", "translate(" + padding +",0)")
+                    .call(yAxis)
+
+                svg.selectAll('rect')
+                    .data(data)
+                    .enter()
+                    .append( "rect" )
+                    .attr('x', d => xScale(new Date(d['year']-1, 6) ) )
+                    .attr('y', d => yScale(d['month']+0.5) )
+                    .attr('width', d => xScale( new Date(d['year']+1, 6) ) - xScale(new Date(d['year'], 6) ) )
+                    .attr('height', d => yScale(d['month']-0.5) - yScale(d['month']+0.5) )
+                    .attr('data-year', d => d.year )
+                    .attr('data-month', d => d.month )
+                    .attr('data-month', d => d.month )
+                    .attr('data-variance', d => d.variance * base )
+                    .style('fill', d => {
+                        const variance = d.variance * base
+
+                        return getColor(variance)
+                    })
+
+            } )
+            .catch( err => {
+                console.log(err)
+            } )
+        // }
+
+    </script>
+
+  </body>
+</html>
