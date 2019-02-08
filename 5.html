@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+    <title>Task 5</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://d3js.org/d3-array.v1.min.js"></script>
+    <script src="https://d3js.org/d3-hierarchy.v1.min.js"></script>
+  </head>
+  <body>
+    <div>
+
+    </div>
+    <style>
+      #content{
+        position: relative;
+      }
+    </style>
+    <script type="text/javascript">
+        // https://cdn.rawgit.com/freeCodeCamp/testable-projects-fcc/a80ce8f9/src/data/tree_map/kickstarter-funding-data.json
+        // https://cdn.rawgit.com/freeCodeCamp/testable-projects-fcc/a80ce8f9/src/data/tree_map/movie-data.json
+        // https://cdn.rawgit.com/freeCodeCamp/testable-projects-fcc/a80ce8f9/src/data/tree_map/video-game-sales-data.json
+
+        const width = 1300,
+			  height = 1000
+
+        const svg = d3.select("body").append("svg")
+			.attr("width", width)
+			.attr("height", height)
+
+            svg.append('g')
+        
+        const treemapLayout = d3.partition()
+
+        const data = {
+			"name": "Product Design",
+			"children": [{
+				"name": "Pebble Time - Awesome Smartwatch, No Compromises",
+				"category": "Product Design",
+				"value": "20338986"
+			}, {
+				"name": "COOLEST COOLER: 21st Century Cooler that's Actually Cooler",
+				"category": "Product Design",
+				"value": "13285226"
+			}, {
+				"name": "Pebble 2, Time 2 + All-New Pebble Core",
+				"category": "Product Design",
+				"value": "12779843"
+			}, {
+				"name": "Pebble: E-Paper Watch for iPhone and Android",
+				"category": "Product Design",
+				"value": "10266845"
+			}, {
+				"name": "The World's Best TRAVEL JACKET with 15 Features || BAUBAX",
+				"category": "Product Design",
+				"value": "9192055"
+			}, {
+				"name": "The Everyday Backpack, Tote, and Sling",
+				"category": "Product Design",
+				"value": "6565782"
+			}]
+		}
+
+        
+
+        d3.json('https://cdn.rawgit.com/freeCodeCamp/testable-projects-fcc/a80ce8f9/src/data/tree_map/kickstarter-funding-data.json')
+        .then( data => {
+            
+            const root = d3.hierarchy(data)
+			root.sum(function(d) { return d.value ? 1 : 0; })
+
+			treemapLayout(root.descendants())
+
+			d3.select('svg g')
+				.selectAll('rect')
+				.data(root.descendants())
+				.enter()
+				.append('rect')
+				.attr('x', function(d) { return d.x0; })
+				.attr('y', function(d) { return d.y0; })
+				.attr('width', function(d) { return d.x1 - d.x0; })
+				.attr('height', function(d) { return d.y1 - d.y0; })
+			} )
+    </script>
+
+  </body>
+</html>
