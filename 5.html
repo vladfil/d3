@@ -8,21 +8,26 @@
     <script src="https://d3js.org/d3-hierarchy.v1.min.js"></script>
   </head>
   <body>
-    <div>
 
-    </div>
     <style>
-      #content{
-        position: relative;
-      }
+      /* rect {
+    fill: cadetblue;
+    opacity: 0.3;
+    stroke: white;
+    } */
+    text {
+    font-family: "Helvetica Neue", Helvetica, sans-serif;
+    fill: white;
+    font-size: 10px;
+    }
     </style>
     <script type="text/javascript">
         // https://cdn.rawgit.com/freeCodeCamp/testable-projects-fcc/a80ce8f9/src/data/tree_map/kickstarter-funding-data.json
         // https://cdn.rawgit.com/freeCodeCamp/testable-projects-fcc/a80ce8f9/src/data/tree_map/movie-data.json
         // https://cdn.rawgit.com/freeCodeCamp/testable-projects-fcc/a80ce8f9/src/data/tree_map/video-game-sales-data.json
 
-        const width = 1300,
-			  height = 1000
+        const width = 1400,
+			  height = 800
 
         const svg = d3.select("body").append("svg")
 			.attr("width", width)
@@ -30,57 +35,66 @@
 
             svg.append('g')
         
-        const treemapLayout = d3.partition()
+        // const treemapLayout = d3.partition()
 
-        const data = {
-			"name": "Product Design",
-			"children": [{
-				"name": "Pebble Time - Awesome Smartwatch, No Compromises",
-				"category": "Product Design",
-				"value": "20338986"
-			}, {
-				"name": "COOLEST COOLER: 21st Century Cooler that's Actually Cooler",
-				"category": "Product Design",
-				"value": "13285226"
-			}, {
-				"name": "Pebble 2, Time 2 + All-New Pebble Core",
-				"category": "Product Design",
-				"value": "12779843"
-			}, {
-				"name": "Pebble: E-Paper Watch for iPhone and Android",
-				"category": "Product Design",
-				"value": "10266845"
-			}, {
-				"name": "The World's Best TRAVEL JACKET with 15 Features || BAUBAX",
-				"category": "Product Design",
-				"value": "9192055"
-			}, {
-				"name": "The Everyday Backpack, Tote, and Sling",
-				"category": "Product Design",
-				"value": "6565782"
-			}]
-		}
-
+		console.log(d3.schemeCategory10);
+		
         
 
-        d3.json('https://cdn.rawgit.com/freeCodeCamp/testable-projects-fcc/a80ce8f9/src/data/tree_map/kickstarter-funding-data.json')
+        d3.json('https://cdn.rawgit.com/freeCodeCamp/testable-projects-fcc/a80ce8f9/src/data/tree_map/video-game-sales-data.json')
         .then( data => {
             
-            const root = d3.hierarchy(data)
-			root.sum(function(d) { return d.value ? 1 : 0; })
+            const treemapLayout = d3.treemap()
+                .size([width, height])
 
-			treemapLayout(root.descendants())
+            const rootNode = d3.hierarchy(data)
+			
+            rootNode.sum(function(d) {
+                return d.value
+            })
 
-			d3.select('svg g')
-				.selectAll('rect')
-				.data(root.descendants())
-				.enter()
-				.append('rect')
-				.attr('x', function(d) { return d.x0; })
-				.attr('y', function(d) { return d.y0; })
-				.attr('width', function(d) { return d.x1 - d.x0; })
-				.attr('height', function(d) { return d.y1 - d.y0; })
+            treemapLayout(rootNode)
+
+			const parentNodes = []
+			rootNode.descendants().forEach( node => {
+				if(node.depth === 1) {
+					parentNodes.push( node.data.name )
+				}
 			} )
+
+			const color = d3.scaleOrdinal().domain(parentNodes).range(d3.schemeCategory10)
+			
+
+            const nodes = d3.select('svg g')
+                .selectAll('g')
+                .data(rootNode.leaves())
+                .enter()
+                .append('g')
+                .attr('transform', function(d) {return 'translate(' + [d.x0, d.y0] + ')'})
+
+            nodes
+                .append('rect')
+                .attr('width', function(d) { return d.x1 - d.x0; })
+                .attr('height', function(d) { return d.y1 - d.y0; })
+                .attr('stroke', '#fff')
+                .style('fill', d => ( d.depth > 1 ) ? color( d.parent.data.name ) : 'none' )
+				.append("text")
+				.text(d => d.data.name )
+
+            nodes
+				.append("text")
+				.attr('dx', 5)
+				.attr('dy', 25)
+				.text(d => d.value)
+				.style("fill", "#fff")
+            
+			nodes
+				.append("text")
+				.attr('dx', 5)
+				.attr('dy', 10)
+				.text(d => d.data.name)
+				.style("fill", "#fff")
+		} )
     </script>
 
   </body>
