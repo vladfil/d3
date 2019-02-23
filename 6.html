@@ -1,0 +1,147 @@
+<head>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Raleway');
+        
+        body {
+          font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <svg></svg>
+    <label><input class="sizeSelect" type="radio" name="mode" value="size" checked /> Size</label>
+    <label><input class="sizeSelect"  type="radio" name="mode" value="count" /> Count</label>
+    <script>
+        const nodeData = {
+            "name": "TOPICS", "children": [{
+                "name": "Topic A",
+                "children": [{"name": "Sub A1", "size": 4, "rank": 1}, {"name": "Sub A2", "size": 4, "rank": 1}]
+            }, {
+                "name": "Topic B",
+                "children": [{"name": "Sub B1", "size": 3, "rank": 1}, {"name": "Sub B2", "size": 3, "rank": 1}, {
+                    "name": "Sub B3", "size": 3, "rank": 1}]
+            }, {
+                "name": "Topic C",
+                "children": [{"name": "Sub C1", "size": 4, "rank": 1}, {"name": "Sub C2", "size": 4, "rank": 1}]
+            }, {
+                "name": "Topic D",
+                "children": [{"name": "Sub D1", "size": 4, "rank": 6}, {"name": "Sub D2", "size": 4, "rank": 6}]
+            }, {
+                "name": "Topic E",
+                "children": [{"name": "Sub E1", "size": 4, "rank": 6}, {"name": "Sub E2", "size": 4, "rank": 6}]
+            }, {
+                "name": "Topic F",
+                "children": [{"name": "Sub F1", "size": 4, "rank": 6}, {"name": "Sub F2", "size": 4, "rank": 6}]
+            }, {
+                "name": "Topic G",
+                "children": [{"name": "Sub G1", "size": 4, "rank": 100}, {"name": "Sub G2", "size": 4, "rank": 100}]
+            }, {
+                "name": "Topic H",
+                "children": [{"name": "Sub H1", "size": 4, "rank": 100}, {"name": "Sub H2", "size": 4, "rank": 100}]
+            }]
+        }
+
+        const width = 500,
+              height = 500,
+              radius = Math.min(width, height) / 2
+
+        const g = d3.select('svg')
+                    .attr('width', width)
+                    .attr('height', height)
+                    .append('g')
+                    .attr('transform', 'translate(' + width/2 + ',' + height/2 + ')')
+
+        const partition = d3.partition().size([Math.PI * 2, radius])
+        const root = d3.hierarchy( nodeData ).sum( d => d.size ).sort((a, b) => b.value - a.value)
+        const arc = d3.arc()
+            .innerRadius(d => d.y0)
+            .outerRadius(d => d.y1)
+            .startAngle(d => {d.x0s = d.x0; return d.x0})
+            .endAngle(d => {d.x1s = d.x1; return d.x1})
+        
+        color = d3.scaleOrdinal(d3.schemeCategory10)
+
+        function getParentNode (node) {
+            if( node.depth !== 1 ) {
+                const parent = node.parent
+                if(parent) {
+                    return getParentNode(parent)
+                } else {
+                    return node.data.name
+                }
+            } else {
+                return node.data.name
+            }
+        }
+
+        partition(root)
+
+        const slice = g.selectAll('g')
+            .data( root.descendants() )
+            .enter().append('g').attr("class", "node")
+
+        
+        slice.append('path')
+            .attr('display', d => d.depth === 0 ? 'none' : null )
+            .attr('d', arc)
+            .style('stroke', '#fff')
+            .style("fill", (d) => { 
+                // console.log(color(getParentNode(d)), getParentNode(d));
+                // getParentNode(d)
+                return color(getParentNode(d)) 
+            })
+
+        g.selectAll('.node')
+            .append('text')
+            .attr("transform", d => "translate(" + arc.centroid(d) + ")rotate(" + computeTextRotation(d) + ")")
+            .attr("dx", "-20")
+            .attr("dy", ".5em")
+            .text(function(d) { return d.parent ? d.data.name : "" })
+            .style('pointer-events', 'none')
+        
+
+        function computeTextRotation(d) {
+            var angle = (d.x0 + d.x1) / Math.PI * 90;  // <-- 1
+            return (angle < 90 || angle > 270) ? angle : angle + 180;  // <--2 "labels aligned with slices"
+
+            // Alternate label formatting
+            //return (angle < 180) ? angle - 90 : angle + 90;  // <-- 3 "labels as spokes"
+        }
+
+        d3.selectAll('.sizeSelect').on('click', function(d,i) {
+            if( this.value === 'size' ) {
+                root.sum( d => d.size )
+            } else {
+                root.count()
+            }
+            root.sort((a, b) => b.value - a.value)
+            partition(root)
+            slice.selectAll('path').transition().duration(750).attrTween('d', arcTweenPath)
+            slice.selectAll('text').transition().duration(750).attrTween('transform', arcTweenText)
+        })
+
+        function arcTweenPath(a, i) {
+            var oi = d3.interpolate({ x0: a.x0s, x1: a.x1s }, a);
+            function tween(t) {
+                var b = oi(t);
+                a.x0s = b.x0;
+                a.x1s = b.x1;
+                return arc(b);
+            }
+
+            return tween;  // <-- 6
+        }
+
+        function arcTweenText(a, i) {
+
+            var oi = d3.interpolate({ x0: a.x0s, x1: a.x1s }, a);
+            function tween(t) {
+                var b = oi(t);
+                return "translate(" + arc.centroid(b) + ")rotate(" + computeTextRotation(b) + ")";
+            }
+            return tween;
+        }
+        
+    </script>
+</body>
