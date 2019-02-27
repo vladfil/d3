@@ -1,0 +1,114 @@
+<head>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Raleway');
+        
+        body {
+          font-family: "Raleway", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        const data = [
+            {
+                date: '2010',
+                max: 100,
+                min: 67,
+            },
+            {
+                date: '2011',
+                max: 70,
+                min: 59,
+            },
+            {
+                date: '2012',
+                max: 50,
+                min: 22,
+            },
+            {
+                date: '2013',
+                max: 88,
+                min: 44,
+            },
+            {
+                date: '2014',
+                max: 65,
+                min: 15,
+            },
+            {
+                date: '2015',
+                max: 89,
+                min: 70,
+            },
+            {
+                date: '2016',
+                max: 56,
+                min: 49,
+            },
+            {
+                date: '2017',
+                max: 77,
+                min: 33,
+            },
+            {
+                date: '2018',
+                max: 50,
+                min: 20,
+            },
+            {
+                date: '2019',
+                max: 89,
+                min: 70,
+            },
+        ]
+        
+        const width = 700
+        const height = 500
+        const padding = 40
+        const svg = d3.select('body').append('svg').attr('height', height).attr('width', width)
+        const minVal = d3.min(data, d => d.max )
+        const maxVal = d3.max(data, d => d.max )
+        
+        const minValMin = d3.min(data, d => d.min )
+        const maxValMin = d3.max(data, d => d.min )
+
+        const datesVals = d3.extent(data, d => d.date)
+
+        const x = d3.scaleLinear().domain(datesVals).range([0, width-padding])
+        const y = d3.scaleLinear().domain([0, maxVal]).range([height-padding, 0])
+
+        const axisX = d3.axisBottom(x)
+        const axisY = d3.axisLeft(y)
+
+        svg.append("g")
+            .attr("transform", "translate("+ padding +", 0)")
+            .call(axisY)
+        
+        svg.append("g")
+            .attr("transform", "translate("+ padding +", 460)")
+            .call(axisX)
+        // Lines
+        const line = d3.line()
+            .x( d => x(+d.date) + padding )
+            .y( d => y(d.max) )
+        
+        const lineMin = d3.line()
+            .x( d => x(+d.date) + padding )
+            .y( d => y(d.min) )
+        
+        // svg.append('path').attr('d', line(data)).style('fill', 'none').style('stroke', 'steelblue').style('stroke-width', '2px')
+        // svg.append('path').attr('d', lineMin(data)).style('fill', 'none').style('stroke', 'green').style('stroke-width', '2px')
+
+        // lineRadial
+        const lineRadial = d3.lineRadial().angle(d => x(d.min)).radius(d => y(d.min))
+        console.log(lineRadial(data));
+        
+        svg.append('path').attr('d', lineRadial(data))
+            .style('fill', 'none')
+            .style('stroke', 'green')
+            .style('stroke-width', '2px')
+            .attr('transform', "translate("+ height/2 +", "+ width/2 +")")
+
+    </script>
+</body>
